@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cut-Buchung">
+<meta name="theme-color" content="#2196F3">
+<title>Cut-Buchung</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root {
+    --blue: #2196F3;
+    --blue-dark: #1769aa;
+    --blue-soft: #e3f2fd;
+    --green: #43a047;
+    --red: #c0392b;
+    --amber-bg: #fff3cd;
+    --amber-border: #ffe08a;
+    --bg: #f5f5f5;
+    --card: #ffffff;
+    --border: #e0e0e0;
+    --text: #222;
+    --text-light: #6b6b6b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --blue-soft: #16324a;
+      --amber-bg: #3a3214;
+      --amber-border: #6b5a1d;
+      --bg: #121417;
+      --card: #1d2025;
+      --border: #30343b;
+      --text: #ececec;
+      --text-light: #a0a4ab;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  }
+  header {
+    background: var(--blue);
+    color: #fff;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 20px;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 4px; font-size: 1.4rem; }
+  header p { margin: 0; font-size: 0.85rem; opacity: 0.9; }
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 12px max(12px, env(safe-area-inset-left, 0px)) 12px max(12px, env(safe-area-inset-right, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .card h2 {
+    margin: 0;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .step {
+    display: inline-grid;
+    place-items: center;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: #fff;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  .hint { margin: 0; font-size: 0.85rem; color: var(--text-light); line-height: 1.45; }
+  label { font-size: 0.85rem; font-weight: 600; display: flex; flex-direction: column; gap: 4px; }
+  label .sub { font-weight: 400; color: var(--text-light); }
+  input[type="text"], input[type="password"], input[type="date"], input[type="time"], select {
+    font: inherit;
+    font-size: 16px; /* verhindert Zoom auf iOS */
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    width: 100%;
+    min-width: 0;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 1px;
+  }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > * { flex: 1 1 140px; min-width: 0; }
+  button {
+    font: inherit;
+    font-size: 1rem;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    background: var(--blue);
+    color: #fff;
+    font-weight: 600;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.secondary { background: var(--blue-soft); color: var(--blue-dark); }
+  @media (prefers-color-scheme: dark) { button.secondary { color: #9fd0ff; } }
+  button.link {
+    background: none; color: var(--blue); padding: 4px 0; font-weight: 500; font-size: 0.9rem;
+    align-self: flex-start;
+  }
+  .drop {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 20px 12px;
+    text-align: center;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+  .drop strong { color: var(--blue); }
+  .thumbs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .thumb { position: relative; width: 84px; height: 140px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .thumb button {
+    position: absolute; top: 4px; right: 4px;
+    width: 26px; height: 26px; padding: 0; border-radius: 50%;
+    background: rgba(0,0,0,0.6); font-size: 0.9rem; line-height: 26px;
+  }
+  details summary { cursor: pointer; font-size: 0.9rem; color: var(--blue); font-weight: 600; }
+  details[open] summary { margin-bottom: 10px; }
+  details .inner { display: flex; flex-direction: column; gap: 12px; }
+  .notice {
+    background: var(--amber-bg);
+    border: 1px solid var(--amber-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+  .error { color: var(--red); font-size: 0.9rem; margin: 0; white-space: pre-wrap; }
+  .status { font-size: 0.9rem; color: var(--text-light); display: flex; align-items: center; gap: 8px; }
+  .spinner {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 3px solid var(--blue-soft); border-top-color: var(--blue);
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
+
+  /* Ergebnisliste */
+  .days { display: flex; flex-direction: column; }
+  .day {
+    display: grid;
+    grid-template-columns: 26px 92px 1fr 32px;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .day:last-child { border-bottom: none; }
+  .day.off .date, .day.off input[type="text"] { opacity: 0.45; }
+  .day input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--green); margin: 0; }
+  .date { font-size: 0.9rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .date .wd { font-weight: 700; display: block; }
+  .date .dm { color: var(--text-light); font-size: 0.8rem; }
+  .day input[type="text"] { padding: 8px 10px; }
+  .day .del { background: none; color: var(--red); padding: 0; font-size: 1.2rem; }
+  .day.unsure input[type="text"] { border-color: #e0a800; }
+  .week-sep { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-light); padding: 12px 0 2px; font-weight: 600; }
+  .summary { font-size: 0.9rem; color: var(--text-light); }
+  .actions { display: flex; flex-direction: column; gap: 8px; }
+  .legend { font-size: 0.8rem; color: var(--text-light); display: flex; align-items: center; gap: 6px; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border: 2px solid #e0a800; border-radius: 4px; }
+  pre { font-size: 0.75rem; white-space: pre-wrap; word-break: break-word; max-height: 240px; overflow: auto; background: var(--bg); padding: 8px; border-radius: 8px; margin: 0; }
+  footer { text-align: center; font-size: 0.78rem; color: var(--text-light); padding: 8px 16px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Cut-Buchung</h1>
+  <p>Screenshot vom Buchungskalender → Termine im Handy-Kalender</p>
+</header>
+
+<div class="wrap">
+
+  <!-- Einmalige Einrichtung -->
+  <section class="card" id="setup-card">
+    <h2><span class="step">⚙</span> Einrichtung</h2>
+    <p class="hint">Die Texterkennung läuft komplett auf diesem Gerät. Der Screenshot wird nirgendwohin hochgeladen.</p>
+    <details id="settings">
+      <summary>Einstellungen</summary>
+      <div class="inner">
+        <label>Weitere Räume <span class="sub">optional – „Cut 92“ und „VM-Cut 08“ (Cut/VM-Cut + Nummer) werden automatisch erkannt. Nur für andere Raumnamen hier kommagetrennt eintragen.</span>
+          <input type="text" id="known-rooms" placeholder="z. B. Raum Elbe, Studio 3" spellcheck="false">
+        </label>
+        <label>Titel der Kalendereinträge <span class="sub"><code>{raum}</code> wird durch den Raum ersetzt</span>
+          <input type="text" id="title-tpl" value="Büro: {raum}">
+        </label>
+        <label>Uhrzeit
+          <select id="time-mode">
+            <option value="allday">Ganztägig</option>
+            <option value="timed">Mit Uhrzeit</option>
+          </select>
+        </label>
+        <div class="row" id="time-row" hidden>
+          <label>Von <input type="time" id="t-start" value="08:00"></label>
+          <label>Bis <input type="time" id="t-end" value="17:00"></label>
+        </div>
+        <label>Erinnerung
+          <select id="alarm">
+            <option value="">Keine</option>
+            <option value="-PT15M">15 Minuten vorher</option>
+            <option value="-PT1H">1 Stunde vorher</option>
+            <option value="-PT9H" data-allday="true">Am Vortag, 15:00 (bei ganztägig)</option>
+          </select>
+        </label>
+        <button class="secondary" id="save-settings" type="button">Einstellungen speichern</button>
+      </div>
+    </details>
+  </section>
+
+  <!-- Schritt 1: Screenshot -->
+  <section class="card">
+    <h2><span class="step">1</span> Screenshot wählen</h2>
+    <input type="file" id="file" accept="image/*" multiple hidden>
+    <div class="drop" id="drop" role="button" tabindex="0">
+      <strong>Screenshot auswählen</strong><br>
+      aus Fotos oder Dateien (auch mehrere)
+    </div>
+    <div class="thumbs" id="thumbs"></div>
+    <label>Monat/Jahr <span class="sub">nur nötig, wenn es im Screenshot nicht zu sehen ist</span>
+      <input type="text" id="period-hint" placeholder="z. B. Dezember 2026">
+    </label>
+    <button id="analyze" type="button" disabled>Screenshot analysieren</button>
+    <div class="status" id="status" hidden><div class="spinner"></div><span id="status-text">Lese Text …</span></div>
+    <p class="error" id="error" hidden></p>
+    <details id="ocr-details" hidden>
+      <summary>Erkannter Text anzeigen</summary>
+      <pre id="ocr-text"></pre>
+    </details>
+  </section>
+
+  <!-- Schritt 2: Prüfen -->
+  <section class="card" id="result-card" hidden>
+    <h2><span class="step">2</span> Prüfen &amp; anpassen</h2>
+    <p class="hint">Nur Werktage (Mo–Fr). Vergangene Tage sind nicht angehakt. Häkchen setzen oder entfernen, um Tage zu übernehmen. Raum antippen, um ihn zu ändern.</p>
+    <div class="legend" id="unsure-legend" hidden><i></i> unsicher erkannt – bitte prüfen</div>
+    <div class="days" id="days"></div>
+    <button class="link" id="add-day" type="button">+ Tag hinzufügen</button>
+    <div class="row" id="add-row" hidden>
+      <input type="date" id="add-date">
+      <input type="text" id="add-room" placeholder="Raum">
+      <button class="secondary" id="add-confirm" type="button">Hinzufügen</button>
+    </div>
+  </section>
+
+  <!-- Schritt 3: Exportieren -->
+  <section class="card" id="export-card" hidden>
+    <h2><span class="step">3</span> In den Kalender übernehmen</h2>
+    <p class="summary" id="summary"></p>
+    <div class="actions">
+      <button id="export" type="button">Zum Kalender hinzufügen</button>
+      <button class="secondary" id="share" type="button" hidden>Teilen … (an Kalender-App senden)</button>
+    </div>
+    <p class="hint">iPhone: In Safari öffnet sich „Alle hinzufügen“. Android: Die heruntergeladene Datei
+      <code>buero-buchungen.ics</code> antippen und mit Google Kalender öffnen.</p>
+  </section>
+
+  <footer>Alles passiert lokal auf dem Gerät. Texterkennung: Tesseract (Open Source).</footer>
+</div>
+
+<script src="ocr/tesseract.min.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+  let images = [];   // {blob, url}
+  let days = [];     // {date: 'YYYY-MM-DD', room, on, unsure}
+
+  // ---------- Einstellungen ----------
+  const store = {
+    get(k, d = '') { try { return localStorage.getItem('bb_' + k) ?? d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('bb_' + k, v); } catch {} }
+  };
+  const fields = ['known-rooms', 'title-tpl', 'time-mode', 't-start', 't-end', 'alarm'];
+  fields.forEach(f => { const v = store.get(f, null); if (v !== null) $(f).value = v; });
+
+  function syncSettingsUI() {
+    $('time-row').hidden = $('time-mode').value !== 'timed';
+    updateAnalyzeBtn();
+  }
+  $('time-mode').addEventListener('change', syncSettingsUI);
+  $('save-settings').addEventListener('click', () => {
+    fields.forEach(f => store.set(f, $(f).value.trim()));
+    syncSettingsUI();
+    $('settings').open = false;
+    renderSummary();
+  });
+
+  // ---------- Bilder ----------
+  $('drop').addEventListener('click', () => $('file').click());
+  $('drop').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('file').click(); } });
+  $('drop').addEventListener('dragover', e => e.preventDefault());
+  $('drop').addEventListener('drop', e => { e.preventDefault(); addFiles(e.dataTransfer.files); });
+  $('file').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+  document.addEventListener('paste', e => {
+    const files = [...(e.clipboardData?.items || [])].filter(i => i.type.startsWith('image/')).map(i => i.getAsFile());
+    if (files.length) addFiles(files);
+  });
+
+  async function addFiles(fileList) {
+    for (const f of fileList) {
+      if (!f || !f.type.startsWith('image/')) continue;
+      try {
+        const blob = await prepare(f);
+        images.push({ blob, url: URL.createObjectURL(blob) });
+      } catch { showError('Das Bild konnte nicht gelesen werden. Bitte als PNG oder JPG wählen.'); }
+    }
+    renderThumbs();
+  }
+
+  // Bereitet das Bild für die Texterkennung vor: Graustufen, kräftiger Kontrast,
+  // kleine Bilder werden vergrößert (Tesseract liest größere Schrift zuverlässiger).
+  function prepare(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const long = Math.max(img.width, img.height);
+        let scale = img.width < 1000 ? 2 : 1;
+        if (long * scale > 4000) scale = 4000 / long;
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * scale);
+        c.height = Math.round(img.height * scale);
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(img.src);
+        const id = ctx.getImageData(0, 0, c.width, c.height), px = id.data;
+        // Helligkeit messen, damit auch dunkle Kalender (Dark Mode) funktionieren
+        let sum = 0;
+        for (let i = 0; i < px.length; i += 4) sum += 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+        const invert = sum / (px.length / 4) < 110;
+        for (let i = 0; i < px.length; i += 4) {
+          let g = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+          if (invert) g = 255 - g;
+          g = Math.max(0, Math.min(255, (g - 128) * 1.4 + 140));
+          px[i] = px[i + 1] = px[i + 2] = g;
+        }
+        ctx.putImageData(id, 0, 0);
+        c.toBlob(b => b ? resolve(b) : reject(), 'image/png');
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  function renderThumbs() {
+    const box = $('thumbs');
+    box.innerHTML = '';
+    images.forEach((im, i) => {
+      const d = document.createElement('div');
+      d.className = 'thumb';
+      d.innerHTML = `<img alt="Screenshot ${i + 1}"><button type="button" aria-label="Entfernen">✕</button>`;
+      d.querySelector('img').src = im.url;
+      d.querySelector('button').onclick = () => { URL.revokeObjectURL(im.url); images.splice(i, 1); renderThumbs(); };
+      box.appendChild(d);
+    });
+    updateAnalyzeBtn();
+  }
+
+  function updateAnalyzeBtn() {
+    $('analyze').disabled = !images.length || !window.Tesseract;
+  }
+
+  // ---------- Texterkennung (lokal) ----------
+  let workerPromise = null;
+  function getWorker() {
+    if (!workerPromise) {
+      const base = new URL('ocr/', location.href).href;
+      workerPromise = Tesseract.createWorker('deu', 1, {
+        workerPath: base + 'worker.min.js',
+        corePath: base,
+        langPath: base.replace(/\/$/, ''),
+        workerBlobURL: false,
+        logger: m => {
+          if (m.status === 'recognizing text') setStatus(`Lese Text … ${Math.round(m.progress * 100)} %`);
+          else if (/load|initializ/.test(m.status)) setStatus('Starte Texterkennung (beim ersten Mal ein paar Sekunden) …');
+        }
+      }).catch(e => { workerPromise = null; throw e; });
+    }
+    return workerPromise;
+  }
+  const setStatus = t => { $('status-text').textContent = t; };
+
+  $('analyze').addEventListener('click', async () => {
+    hideError();
+    $('analyze').disabled = true;
+    $('status').hidden = false;
+    setStatus('Starte Texterkennung …');
+    try {
+      const worker = await getWorker();
+      const found = [];
+      const texts = [];
+      for (let i = 0; i < images.length; i++) {
+        if (images.length > 1) setStatus(`Lese Screenshot ${i + 1} von ${images.length} …`);
+        const { data } = await worker.recognize(images[i].blob);
+        texts.push(data.text);
+        found.push(...extractBookings(data));
+      }
+      $('ocr-text').textContent = texts.join('\n\n———\n\n');
+      $('ocr-details').hidden = false;
+
+      const weekdays = found.filter(b => isWeekday(b.date));
+      if (!weekdays.length) {
+        throw new Error(lastProblem || 'Im Screenshot wurden keine Buchungen an Werktagen gefunden. Tipp: Unter „Einstellungen“ deine Raumnamen eintragen und unter „Erkannter Text anzeigen“ prüfen, was gelesen wurde.');
+      }
+      // Pro Datum nur eine Buchung; neue Analyse überschreibt gleiche Daten
+      const map = new Map(days.map(d => [d.date, d]));
+      const seen = new Set();
+      for (const b of weekdays) {
+        if (seen.has(b.date)) continue;
+        seen.add(b.date);
+        map.set(b.date, { date: b.date, room: b.room, on: !!b.room && b.date >= todayIso, unsure: b.unsure });
+      }
+      days = [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+      renderDays();
+      $('result-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (e) {
+      showError(e?.message || 'Die Texterkennung konnte nicht gestartet werden. Bitte Seite neu laden.');
+    } finally {
+      $('status').hidden = true;
+      updateAnalyzeBtn();
+    }
+  });
+
+  // ---------- Auswertung des erkannten Texts ----------
+  const MONTHS = [
+    ['januar', 'jan', 'jänner'], ['februar', 'feb'], ['märz', 'maerz', 'mär', 'mrz', 'mar', 'march'],
+    ['april', 'apr'], ['mai', 'may'], ['juni', 'jun', 'june'], ['juli', 'jul', 'july'], ['august', 'aug'],
+    ['september', 'sept', 'sep'], ['oktober', 'okt', 'oct', 'october'], ['november', 'nov'], ['dezember', 'dez', 'dec', 'december']
+  ];
+  const MONTH_RE = 'jan(?:uar)?|jänner|feb(?:ruar)?|m(?:ä|ae)rz|mär|mrz|apr(?:il)?|mai|jun[i]?|jul[i]?|aug(?:ust)?|sep(?:t(?:ember)?)?|okt(?:ober)?|nov(?:ember)?|dez(?:ember)?';
+  function monthIndex(word) {
+    const w = String(word).toLowerCase().replace(/[^a-zäöü]/g, '');
+    if (w.length < 3) return 0;
+    for (let i = 0; i < 12; i++) {
+      if (MONTHS[i].includes(w) || (w.length >= 4 && MONTHS[i][0].startsWith(w))) return i + 1;
+    }
+    return 0;
+  }
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  // Jahr wählen, wenn keins zu sehen ist: das, bei dem das Datum am nächsten an heute liegt
+  function guessYear(m, d) {
+    let best = today.getFullYear(), bestDiff = Infinity;
+    for (const y of [best - 1, best, best + 1]) {
+      const diff = Math.abs(new Date(y, m - 1, d) - today);
+      if (diff < bestDiff) { bestDiff = diff; best = y; }
+    }
+    return best;
+  }
+  const iso = (y, m, d) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  const validDate = (y, m, d) => { const t = new Date(y, m - 1, d); return t.getFullYear() === y && t.getMonth() === m - 1 && t.getDate() === d; };
+
+  function detectPeriod(text) {
+    const hint = $('period-hint').value.trim();
+    const src = hint || text;
+    let m = src.match(new RegExp(`(${MONTH_RE})[a-zä. ]{0,8}?(\\d{4})`, 'i'));
+    if (m) return { m: monthIndex(m[1]), y: +m[2] };
+    m = src.match(/(?<!\d)(\d{1,2})\s*[./]\s*(20\d\d)(?!\d)/);
+    if (m && +m[1] >= 1 && +m[1] <= 12) return { m: +m[1], y: +m[2] };
+    m = src.match(new RegExp(`(?<![a-zäöü])(${MONTH_RE})(?![a-zäöü])`, 'i'));
+    if (m) { const mi = monthIndex(m[1]); return { m: mi, y: guessYear(mi, 15) }; }
+    return null;
+  }
+
+  // Sucht einen Raum in einem Textstück.
+  function makeRoomFinder() {
+    const known = $('known-rooms').value.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
+    const norm = s => s.toLowerCase().replace(/\s+/g, '').replace(/,/g, '.').replace(/[–—]/g, '-');
+    const cutRe = /(v\s*m\s*[-–—~]?\s*)?[cg]{1,2}[uv][tf]\s*[:.]?\s*(\d{1,3})(?!\d)/i;
+    const patterns = [
+      /\b(?:Raum|Room|Büro|Buero|Desk|Platz|Arbeitsplatz|Besprechungsraum|Meetingraum)\s*[-:#.]?\s*[A-Za-zÄÖÜäöü0-9][\w.\-\/]*(?:\s+[A-ZÄÖÜ][a-zäöüß]+)?/i,
+      /\b[A-Z]{1,3}\s?\d{1,2}[.\-]\d{1,3}[a-z]?\b/,
+      /(?<![\d.])\d{1,2}[.\-]\d{2,3}[a-z]?(?![\d.])/
+    ];
+    const list = known.map(name => ({ name, n: norm(name) })).sort((x, y) => y.n.length - x.n.length);
+    const finder = text => {
+      finder.fuzzy = false;
+      const t = norm(text);
+      for (const k of list) {
+        const esc = k.n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (new RegExp(`(?<![0-9a-zäöü])${esc}(?![0-9a-zäöü])`).test(t)) return k.name;
+      }
+      const clean = text
+        .replace(/(?<!\d)\d{1,2}\.\s?\d{1,2}\.(?:\s?\d{2,4})?/g, ' ')  // Daten
+        .replace(/\b\d{1,2}[:.]\d{2}\s*(?:uhr|h)?\s*[-–]\s*\d{1,2}[:.]\d{2}/gi, ' ') // Uhrzeiten
+        .replace(/\b\d{1,2}:\d{2}\b/g, ' ');
+      const c = text.match(cutRe);
+      if (c) {
+        // unsicher, wenn „Cut“ nur ungefähr gelesen wurde (z. B. „Ccut“, „Gut“)
+        finder.fuzzy = !/^(vm-?)?cut:?\d/i.test(c[0].replace(/\s/g, ''));
+        return (c[1] ? 'VM-Cut ' : 'Cut ') + c[2];
+      }
+      finder.fuzzy = true;
+      for (const p of patterns) { const m = clean.match(p); if (m) return m[0].trim(); }
+      return '';
+    };
+    return finder;
+  }
+
+  let lastProblem = '';
+
+  function extractBookings(data) {
+    lastProblem = '';
+    const findRoom = makeRoomFinder();
+    const lines = (data.lines || []).map(l => ({ text: l.text.trim(), conf: l.confidence })).filter(l => l.text);
+    const period = detectPeriod(data.text || '');
+
+    if (period) {
+      const byHeaders = extractByHeaders(data, findRoom, period);
+      if (byHeaders && byHeaders.length) return byHeaders;
+    }
+
+    // Variante A: Liste mit ausgeschriebenen Daten („Mo 09.11.“, „Montag, 9. November 2026“)
+    const numRe = /(?<!\d)(\d{1,2})\.\s?(\d{1,2})\.(?:\s?(\d{4}|\d{2})(?!\d))?/;
+    const txtRe = new RegExp(`(?<!\\d)(\\d{1,2})\\.?\\s*(${MONTH_RE})[a-zä]*\\.?(?:\\s*(\\d{4}))?`, 'i');
+    const listResults = [];
+    let current = null;
+    for (const line of lines) {
+      let m = line.text.match(numRe), d, mo, y;
+      if (m) { d = +m[1]; mo = +m[2]; y = m[3] ? (m[3].length === 2 ? 2000 + +m[3] : +m[3]) : null; }
+      else if ((m = line.text.match(txtRe))) { d = +m[1]; mo = monthIndex(m[2]); y = m[3] ? +m[3] : null; }
+      if (m && mo >= 1 && mo <= 12) {
+        y = y || (period && period.m === mo ? period.y : guessYear(mo, d));
+        if (validDate(y, mo, d)) {
+          current = { date: iso(y, mo, d), room: '', unsure: false, linesLeft: 3 };
+          listResults.push(current);
+          const rest = line.text.replace(m[0], ' ');
+          const r = findRoom(rest);
+          if (r) { current.room = r; current.unsure = line.conf < 70; }
+          continue;
+        }
+      }
+      if (current && !current.room && current.linesLeft-- > 0) {
+        const r = findRoom(line.text);
+        if (r) { current.room = r; current.unsure = line.conf < 70; }
+      }
+    }
+    const listHits = listResults.filter(r => r.room);
+    if (listResults.length >= 2 && listHits.length) return listHits;
+
+    // Variante B: Monats- oder Wochenansicht als Raster (Tageszahl oben in der Zelle, Raum darunter)
+    const words = (data.words || []).map(w => ({
+      text: w.text.trim(), conf: w.confidence,
+      x0: w.bbox.x0, x1: w.bbox.x1, y0: w.bbox.y0, y1: w.bbox.y1,
+      cx: (w.bbox.x0 + w.bbox.x1) / 2, h: w.bbox.y1 - w.bbox.y0
+    })).filter(w => w.text);
+    const dayWords = words.filter(w => /^\d{1,2}\.?$/.test(w.text) && +w.text.replace('.', '') >= 1 && +w.text.replace('.', '') <= 31);
+    if (dayWords.length < 3) { lastProblem = listHits.length ? '' : ''; return listHits; }
+    if (!period) {
+      lastProblem = 'Der Monat ist im Screenshot nicht zu erkennen. Bitte oben „Monat/Jahr“ eintragen (z. B. „Dezember 2026“) und erneut analysieren.';
+      return listHits;
+    }
+
+    // Zeilen bilden
+    const medH = median(dayWords.map(w => w.h)) || 20;
+    const sorted = [...dayWords].sort((a, b) => a.y0 - b.y0);
+    const rows = [];
+    for (const w of sorted) {
+      const row = rows.find(r => Math.abs(r.y - w.y0) < medH * 0.7);
+      if (row) row.items.push(w); else rows.push({ y: w.y0, items: [w] });
+    }
+    rows.forEach(r => r.items.sort((a, b) => a.x0 - b.x0));
+    rows.sort((a, b) => a.y - b.y);
+    // Kalenderreihen mit nur einer Zahl sind meist keine Tageszahlen
+    const gridRows = rows.filter(r => r.items.length >= 2 || rows.length <= 2);
+
+    // Monat zuordnen (Vormonats-/Folgemonatstage am Rand berücksichtigen)
+    const ordered = gridRows.flatMap(r => r.items);
+    if (!ordered.length) return listHits;
+    let offset = +ordered[0].text.replace('.', '') > 20 ? -1 : 0, prev = null;
+    for (const w of ordered) {
+      const n = +w.text.replace('.', '');
+      if (prev !== null && n < prev && prev >= 20 && n <= 7) offset++;
+      prev = n;
+      const dt = new Date(period.y, period.m - 1 + offset, n);
+      w.date = iso(dt.getFullYear(), dt.getMonth() + 1, dt.getDate());
+    }
+
+    const gapsX = gridRows.flatMap(r => r.items.slice(1).map((w, i) => w.x0 - r.items[i].x0)).filter(g => g > medH);
+    const colW = median(gapsX) || (Math.max(...words.map(w => w.x1)) / 7);
+    const gapsY = gridRows.slice(1).map((r, i) => r.y - gridRows[i].y);
+    const rowH = median(gapsY) || Infinity;
+
+    // Jedes andere Wort der Zelle zuordnen, in der es steht
+    const cells = new Map();
+    const daySet = new Set(ordered);
+    for (const w of words) {
+      if (daySet.has(w)) continue;
+      const rowAbove = [...gridRows].reverse().find(r => r.y <= w.y0 + medH * 0.3 && w.y0 - r.y < rowH * 0.98);
+      if (!rowAbove) continue;
+      const cands = rowAbove.items.filter(d => d.x0 <= w.cx + colW * 0.3 && w.cx - d.x0 < colW);
+      if (!cands.length) continue;
+      const owner = cands[cands.length - 1];
+      if (!cells.has(owner)) cells.set(owner, []);
+      cells.get(owner).push(w);
+    }
+
+    const gridResults = [];
+    for (const [d, ws] of cells) {
+      ws.sort((a, b) => (Math.abs(a.y0 - b.y0) < medH * 0.5 ? a.x0 - b.x0 : a.y0 - b.y0));
+      const text = ws.map(w => w.text).join(' ');
+      const room = findRoom(text);
+      if (room) {
+        const conf = Math.min(...ws.map(w => w.conf));
+        gridResults.push({ date: d.date, room, unsure: conf < 70 });
+      }
+    }
+    gridResults.sort((a, b) => a.date.localeCompare(b.date));
+    return gridResults.length >= listHits.length ? gridResults : listHits;
+  }
+
+  // Monatsansicht mit Spaltenköpfen „Mo Di Mi Do Fr Sa So“: Die Spalte ergibt den Wochentag,
+  // die Tageszahlen einer Zeile ergeben den Montag dieser Woche. So funktioniert es auch,
+  // wenn einzelne (z. B. graue) Tageszahlen nicht gelesen werden.
+  function extractByHeaders(data, findRoom, period) {
+    const lines = (data.lines || []).filter(l => l.words && l.words.length);
+    const KEYS = ['mo', 'di', 'mi', 'do', 'fr', 'sa', 'so'];
+    const LONG = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'];
+    let header = null;
+    for (const l of lines) {
+      const hits = [];
+      for (const w of l.words) {
+        const t = w.text.toLowerCase().replace(/[^a-zäöü]/g, '');
+        const i = KEYS.indexOf(t.slice(0, 2));
+        if (i >= 0 && t.length >= 2 && LONG[i].startsWith(t)) hits.push({ i, cx: (w.bbox.x0 + w.bbox.x1) / 2, y: w.bbox.y1 });
+      }
+      if (new Set(hits.map(h => h.i)).size >= 5) { header = hits; break; }
+    }
+    if (!header) return null;
+
+    // Spaltenmitten per Ausgleichsgerade: cx = a + b * Spalte
+    const n = header.length;
+    const mi = header.reduce((s, h) => s + h.i, 0) / n, mx = header.reduce((s, h) => s + h.cx, 0) / n;
+    const b = header.reduce((s, h) => s + (h.i - mi) * (h.cx - mx), 0) / header.reduce((s, h) => s + (h.i - mi) ** 2, 0);
+    const a = mx - b * mi;
+    if (!(b > 0)) return null;
+    const colOf = x => Math.round((x - a) / b);
+    const headerY = Math.max(...header.map(h => h.y));
+
+    // Tageszahlen sammeln und zu Wochenzeilen gruppieren
+    // Nur Zeilen, die fast nur aus Zahlen bestehen (z. B. „KW46 9 10 11 12 13 14 15“),
+    // damit Zahlen aus Terminen wie „21 PT“ oder „Cut 08“ nicht als Tag gelten.
+    const numberLines = lines.filter(l => l.bbox.y0 > headerY - 2 && l.words.filter(w => /^(\d{1,2}\.?|kw\w{0,3}|\W+)$/i.test(w.text.trim())).length >= l.words.length * 0.6);
+    const words = numberLines.flatMap(l => l.words);
+    const nums = words.filter(w => /^\d{1,2}\.?$/.test(w.text.trim()))
+      .map(w => ({ n: parseInt(w.text, 10), col: colOf((w.bbox.x0 + w.bbox.x1) / 2), y: w.bbox.y0, h: w.bbox.y1 - w.bbox.y0 }))
+      .filter(w => w.n >= 1 && w.n <= 31 && w.col >= 0 && w.col <= 6);
+    if (!nums.length) return null;
+    const medH = median(nums.map(w => w.h)) || 20;
+    const rows = [];
+    for (const w of [...nums].sort((p, q) => p.y - q.y)) {
+      const r = rows.find(r => Math.abs(r.y - w.y) < medH * 0.8);
+      if (r) r.items.push(w); else rows.push({ y: w.y, items: [w] });
+    }
+    rows.sort((p, q) => p.y - q.y);
+
+    // Montag jeder Zeile bestimmen (Mehrheitsentscheid über alle gelesenen Zahlen)
+    for (const r of rows) {
+      const votes = new Map();
+      for (const w of r.items) {
+        for (const off of [0, -1, 1]) {
+          const d = new Date(period.y, period.m - 1 + off, w.n);
+          if (d.getDate() !== w.n) continue;
+          d.setDate(d.getDate() - w.col);
+          if (d.getDay() === 1) { const k = d.getTime(); votes.set(k, (votes.get(k) || 0) + 1); break; }
+        }
+      }
+      let best = null, bestV = 0;
+      for (const [k, v] of votes) if (v > bestV) { best = k; bestV = v; }
+      r.monday = best;
+    }
+    // Zeilen ohne lesbare Zahl aus den Nachbarzeilen ergänzen
+    for (let i = 1; i < rows.length; i++) if (rows[i].monday == null && rows[i - 1].monday != null) rows[i].monday = rows[i - 1].monday + 7 * 864e5;
+    for (let i = rows.length - 2; i >= 0; i--) if (rows[i].monday == null && rows[i + 1].monday != null) rows[i].monday = rows[i + 1].monday - 7 * 864e5;
+    // Gruppierung kann Zeilen doppeln (z. B. KW-Nummern): gleiche Woche zusammenfassen
+    const weeks = rows.filter(r => r.monday != null);
+    if (!weeks.length) return null;
+
+    // Buchungen: jede Textzeile nach Spalten aufteilen und den Raum suchen
+    const results = [];
+    for (const l of lines) {
+      if (l.bbox.y0 <= headerY) continue;
+      const week = [...weeks].reverse().find(r => r.y <= l.bbox.y0 + medH * 0.3);
+      if (!week) continue;
+      const perCol = new Map();
+      for (const w of l.words) {
+        const c = colOf((w.bbox.x0 + w.bbox.x1) / 2);
+        if (c < 0 || c > 4) continue;   // nur Mo–Fr
+        if (!perCol.has(c)) perCol.set(c, []);
+        perCol.get(c).push(w);
+      }
+      for (const [c, ws] of perCol) {
+        const room = findRoom(ws.map(w => w.text).join(' '));
+        if (!room) continue;
+        const d = new Date(week.monday);
+        d.setDate(d.getDate() + c);
+        results.push({ date: iso(d.getFullYear(), d.getMonth() + 1, d.getDate()), room, unsure: findRoom.fuzzy === undefined ? Math.min(...ws.map(w => w.confidence)) < 60 : findRoom.fuzzy });
+      }
+    }
+    return results.sort((p, q) => p.date.localeCompare(q.date));
+  }
+
+  function median(arr) {
+    if (!arr.length) return 0;
+    const s = [...arr].sort((a, b) => a - b);
+    return s[Math.floor(s.length / 2)];
+  }
+
+  const parseDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+  const isWeekday = s => { const w = parseDate(s).getDay(); return w >= 1 && w <= 5; };
+  const isoWeek = dt => {
+    const d = new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()));
+    const day = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - day);
+    const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil(((d - y0) / 86400000 + 1) / 7);
+  };
+
+  // ---------- Liste ----------
+  function renderDays() {
+    const box = $('days');
+    box.innerHTML = '';
+    let lastWeek = null;
+    days.forEach((d, i) => {
+      const dt = parseDate(d.date);
+      const kw = isoWeek(dt);
+      if (kw !== lastWeek) {
+        const sep = document.createElement('div');
+        sep.className = 'week-sep';
+        sep.textContent = 'KW ' + kw;
+        box.appendChild(sep);
+        lastWeek = kw;
+      }
+      const row = document.createElement('div');
+      row.className = 'day' + (d.on ? '' : ' off') + (d.unsure ? ' unsure' : '');
+      row.innerHTML = `
+        <input type="checkbox" id="on-${d.date}" aria-label="Tag übernehmen">
+        <label class="date" for="on-${d.date}"><span class="wd">${WD[dt.getDay()]}</span><span class="dm">${dt.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span></label>
+        <input type="text" id="room-${d.date}" aria-label="Raum" placeholder="Raum">
+        <button class="del" type="button" aria-label="Tag entfernen">✕</button>`;
+      const cb = row.querySelector('input[type="checkbox"]');
+      const tx = row.querySelector('input[type="text"]');
+      cb.checked = d.on;
+      tx.value = d.room;
+      cb.onchange = () => { d.on = cb.checked; row.classList.toggle('off', !d.on); renderSummary(); };
+      tx.oninput = () => {
+        d.room = tx.value; d.unsure = false; row.classList.remove('unsure');
+        if (tx.value.trim() && !d.on) { d.on = true; cb.checked = true; row.classList.remove('off'); }
+        renderSummary();
+      };
+      row.querySelector('.del').onclick = () => { days.splice(i, 1); renderDays(); };
+      box.appendChild(row);
+    });
+    $('unsure-legend').hidden = !days.some(d => d.unsure);
+    $('result-card').hidden = $('export-card').hidden = !days.length;
+    renderSummary();
+  }
+
+  $('add-day').onclick = () => { $('add-row').hidden = false; $('add-date').focus(); };
+  $('add-confirm').onclick = () => {
+    const date = $('add-date').value, room = $('add-room').value.trim();
+    if (!date) return;
+    if (!isWeekday(date)) { showError('Bitte einen Werktag (Mo–Fr) wählen.'); return; }
+    hideError();
+    days = days.filter(d => d.date !== date);
+    days.push({ date, room, on: !!room, unsure: false });
+    days.sort((a, b) => a.date.localeCompare(b.date));
+    $('add-date').value = ''; $('add-room').value = ''; $('add-row').hidden = true;
+    renderDays();
+  };
+
+  const selected = () => days.filter(d => d.on && d.room.trim());
+
+  function renderSummary() {
+    const sel = selected();
+    $('summary').textContent = sel.length
+      ? `${sel.length} ${sel.length === 1 ? 'Termin' : 'Termine'} vom ${fmt(sel[0].date)} bis ${fmt(sel[sel.length - 1].date)}`
+      : 'Keine Tage ausgewählt.';
+    $('export').disabled = !sel.length;
+    $('share').disabled = !sel.length;
+  }
+  const fmt = s => parseDate(s).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+
+  // ---------- ICS ----------
+  const icsEscape = s => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  function fold(line) {
+    // Zeilen nach RFC 5545 auf max. 75 Bytes umbrechen
+    const enc = new TextEncoder();
+    if (enc.encode(line).length <= 75) return line;
+    const out = []; let cur = '';
+    for (const ch of line) {
+      if (enc.encode(cur + ch).length > (out.length ? 74 : 75)) { out.push(cur); cur = ''; }
+      cur += ch;
+    }
+    out.push(cur);
+    return out.join('\r\n ');
+  }
+  const ymd = s => s.replace(/-/g, '');
+  const nextDay = s => { const d = parseDate(s); d.setDate(d.getDate() + 1); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`; };
+
+  function buildIcs() {
+    const tpl = $('title-tpl').value.trim() || 'Büro: {raum}';
+    const timed = $('time-mode').value === 'timed';
+    const ts = $('t-start').value || '08:00', te = $('t-end').value || '17:00';
+    const alarm = $('alarm').value;
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MFW//Buero-Buchungen//DE', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+    for (const d of selected()) {
+      const room = d.room.trim();
+      lines.push('BEGIN:VEVENT');
+      lines.push(`UID:buero-${ymd(d.date)}@buerobuchung`);
+      lines.push(`DTSTAMP:${stamp}`);
+      if (timed) {
+        lines.push(`DTSTART:${ymd(d.date)}T${ts.replace(':', '')}00`);
+        lines.push(`DTEND:${ymd(d.date)}T${te.replace(':', '')}00`);
+      } else {
+        lines.push(`DTSTART;VALUE=DATE:${ymd(d.date)}`);
+        lines.push(`DTEND;VALUE=DATE:${nextDay(d.date)}`);
+      }
+      lines.push(`SUMMARY:${icsEscape(tpl.replace(/\{raum\}/gi, room))}`);
+      lines.push(`LOCATION:${icsEscape(room)}`);
+      lines.push('TRANSP:TRANSPARENT');
+      if (alarm) {
+        lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEscape('Büro: ' + room)}`, `TRIGGER:${alarm}`, 'END:VALARM');
+      }
+      lines.push('END:VEVENT');
+    }
+    lines.push('END:VCALENDAR');
+    return lines.map(fold).join('\r\n') + '\r\n';
+  }
+
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  $('export').addEventListener('click', () => {
+    const ics = buildIcs();
+    if (isIOS) {
+      // Safari zeigt bei text/calendar direkt den Dialog „Alle hinzufügen“
+      location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+      return;
+    }
+    const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'buero-buchungen.ics';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  });
+
+  // Teilen (z. B. direkt an Google Kalender / Outlook)
+  try {
+    const probe = new File(['x'], 'x.ics', { type: 'text/calendar' });
+    if (navigator.canShare && navigator.canShare({ files: [probe] })) $('share').hidden = false;
+  } catch {}
+  $('share').addEventListener('click', async () => {
+    const file = new File([buildIcs()], 'buero-buchungen.ics', { type: 'text/calendar' });
+    try { await navigator.share({ files: [file], title: 'Büro-Buchungen' }); } catch {}
+  });
+
+  // ---------- Hilfen ----------
+  function showError(msg) { $('error').textContent = msg; $('error').hidden = false; }
+  function hideError() { $('error').hidden = true; }
+
+  syncSettingsUI();
+
+  // Offline-Nutzung: App-Dateien und Texterkennung zwischenspeichern
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
