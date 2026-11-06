@@ -1,6 +1,6 @@
 // Speichert die App inkl. Texterkennung, damit sie auch offline startet.
 // Bei Änderungen an den Dateien die Versionsnummer erhöhen.
-const CACHE = 'cut-buchung-v1';
+const CACHE = 'cut-buchung-v2';
 const FILES = [
   './',
   './index.html',

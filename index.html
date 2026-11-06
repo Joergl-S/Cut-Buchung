@@ -282,8 +282,7 @@
       <button id="export" type="button">Zum Kalender hinzufügen</button>
       <button class="secondary" id="share" type="button" hidden>Teilen … (an Kalender-App senden)</button>
     </div>
-    <p class="hint">iPhone: In Safari öffnet sich „Alle hinzufügen“. Android: Die heruntergeladene Datei
-      <code>buero-buchungen.ics</code> antippen und mit Google Kalender öffnen.</p>
+    <div class="notice" id="export-help" hidden></div>
   </section>
 
   <footer>Alles passiert lokal auf dem Gerät. Texterkennung: Tesseract (Open Source).</footer>
@@ -865,28 +864,51 @@
 
   const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isHomeScreenApp = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  const FILE_NAME = 'cut-buchung.ics';
+
+  // Kalenderdatei herunterladen. iOS erkennt .ics-Dateien und bietet „Alle hinzufügen“ an.
   $('export').addEventListener('click', () => {
-    const ics = buildIcs();
-    if (isIOS) {
-      // Safari zeigt bei text/calendar direkt den Dialog „Alle hinzufügen“
-      location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-      return;
-    }
-    const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+    const url = URL.createObjectURL(new Blob([buildIcs()], { type: 'text/calendar;charset=utf-8' }));
     const a = document.createElement('a');
-    a.href = url; a.download = 'buero-buchungen.ics';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    a.href = url;
+    a.download = FILE_NAME;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Nicht sofort freigeben: iOS fragt erst nach, bevor es die Datei lädt.
+    setTimeout(() => URL.revokeObjectURL(url), 5 * 60 * 1000);
+    showExportHelp();
   });
 
-  // Teilen (z. B. direkt an Google Kalender / Outlook)
+  function showExportHelp() {
+    const box = $('export-help');
+    let html;
+    if (isIOS) {
+      html = `<strong>So geht es weiter (iPhone/iPad):</strong><ol style="margin:6px 0 0;padding-left:20px">
+        <li>Fragt Safari „<em>${FILE_NAME}</em> laden?“: <strong>Laden</strong> bzw. <strong>Anzeigen</strong> tippen.</li>
+        <li>Sonst oben in der Adressleiste auf den <strong>Download-Pfeil</strong> (↓) tippen und die Datei öffnen.</li>
+        <li>Es erscheint die Terminliste: <strong>„Alle hinzufügen“</strong> tippen.</li></ol>`;
+      if (isHomeScreenApp) html += `<p style="margin:8px 0 0">Passiert nichts? Als Home-Bildschirm-App lässt iOS manchmal keine Downloads zu. Dann die Seite in Safari öffnen oder <strong>„Teilen …“</strong> nutzen.</p>`;
+    } else if (isAndroid) {
+      html = `<strong>So geht es weiter (Android):</strong> Die Datei <em>${FILE_NAME}</em> in den Downloads antippen und mit der Kalender-App öffnen (z. B. Samsung Kalender) – oder <strong>„Teilen …“</strong> nutzen.
+        <p style="margin:8px 0 0">Google Kalender auf Android kann .ics-Dateien nicht öffnen. Dann am PC auf calendar.google.com → Einstellungen → <strong>Importieren</strong>.</p>`;
+    } else {
+      html = `Die Datei <em>${FILE_NAME}</em> wurde heruntergeladen. Per Doppelklick öffnen oder in den Kalender importieren.`;
+    }
+    box.innerHTML = html;
+    box.hidden = false;
+  }
+
+  // Teilen (z. B. an eine Kalender-App oder „In Dateien sichern“)
   try {
     const probe = new File(['x'], 'x.ics', { type: 'text/calendar' });
     if (navigator.canShare && navigator.canShare({ files: [probe] })) $('share').hidden = false;
   } catch {}
   $('share').addEventListener('click', async () => {
-    const file = new File([buildIcs()], 'buero-buchungen.ics', { type: 'text/calendar' });
-    try { await navigator.share({ files: [file], title: 'Büro-Buchungen' }); } catch {}
+    const file = new File([buildIcs()], FILE_NAME, { type: 'text/calendar' });
+    try { await navigator.share({ files: [file], title: 'Cut-Buchung' }); } catch {}
   });
 
   // ---------- Hilfen ----------
